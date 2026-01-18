@@ -239,6 +239,39 @@ update_helm_values() {
     fi
 }
 
+commit_and_push() {
+    log_info "Committing and pushing image tag updates..."
+
+    cd "$PROJECT_ROOT"
+
+    # Check if there are changes to commit
+    if git diff --quiet k8s/charts/spring-api/values.yaml k8s/charts/frontend-ui/values.yaml 2>/dev/null; then
+        log_warning "No changes to commit"
+        return 0
+    fi
+
+    # Stage the changes
+    git add k8s/charts/spring-api/values.yaml k8s/charts/frontend-ui/values.yaml
+
+    # Commit with descriptive message
+    git commit -m "chore(deploy): update image tags to ${IMAGE_TAG}
+
+- blog-api: ${IMAGE_TAG}
+- blog-frontend: ${IMAGE_TAG}
+
+[skip ci]"
+
+    # Push to remote
+    if git push; then
+        log_success "Changes pushed to remote. ArgoCD will sync automatically."
+    else
+        log_error "Failed to push changes. Please push manually."
+        return 1
+    fi
+
+    cd "$SCRIPT_DIR"
+}
+
 build_and_load_images() {
     log_info "Building and loading application images..."
     log_info "Image tag: ${IMAGE_TAG}"
@@ -254,6 +287,9 @@ build_and_load_images() {
     echo ""
 
     update_helm_values
+    echo ""
+
+    commit_and_push
 }
 
 update_argocd_dependencies() {
