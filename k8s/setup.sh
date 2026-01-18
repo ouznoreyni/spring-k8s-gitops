@@ -216,14 +216,80 @@ load_images_to_kind() {
     log_success "All images loaded into Kind cluster!"
 }
 
+# Harbor configuration
+HARBOR_HOST="localhost:30002"
+HARBOR_PROJECT="library"
+HARBOR_USER="admin"
+HARBOR_PASSWORD="Harbor12345"
+
+wait_for_harbor() {
+    log_info "Waiting for Harbor to be ready..."
+
+    local max_attempts=60
+    local attempt=1
+
+    while [ $attempt -le $max_attempts ]; do
+        if curl -s -o /dev/null -w "%{http_code}" "http://${HARBOR_HOST}/api/v2.0/health" | grep -q "200"; then
+            log_success "Harbor is ready!"
+            return 0
+        fi
+        echo -n "."
+        sleep 5
+        attempt=$((attempt + 1))
+    done
+
+    log_warning "Harbor is not ready after ${max_attempts} attempts. Skipping Harbor push."
+    return 1
+}
+
+push_images_to_harbor() {
+    log_info "Pushing images to Harbor registry..."
+
+    # Check if Harbor is accessible
+    if ! wait_for_harbor; then
+        log_warning "Skipping Harbor push. Images are still available in Kind cluster."
+        return 0
+    fi
+
+    # Login to Harbor
+    log_info "Logging into Harbor..."
+    echo "${HARBOR_PASSWORD}" | docker login "${HARBOR_HOST}" -u "${HARBOR_USER}" --password-stdin
+
+    if [ $? -ne 0 ]; then
+        log_error "Failed to login to Harbor"
+        return 1
+    fi
+
+    # Tag and push blog-api
+    log_info "Pushing blog-api to Harbor..."
+    docker tag "blog-api:${IMAGE_TAG}" "${HARBOR_HOST}/${HARBOR_PROJECT}/blog-api:${IMAGE_TAG}"
+    docker tag "blog-api:latest" "${HARBOR_HOST}/${HARBOR_PROJECT}/blog-api:latest"
+    docker push "${HARBOR_HOST}/${HARBOR_PROJECT}/blog-api:${IMAGE_TAG}"
+    docker push "${HARBOR_HOST}/${HARBOR_PROJECT}/blog-api:latest"
+    log_success "Pushed blog-api:${IMAGE_TAG} to Harbor"
+
+    # Tag and push blog-frontend
+    log_info "Pushing blog-frontend to Harbor..."
+    docker tag "blog-frontend:${IMAGE_TAG}" "${HARBOR_HOST}/${HARBOR_PROJECT}/blog-frontend:${IMAGE_TAG}"
+    docker tag "blog-frontend:latest" "${HARBOR_HOST}/${HARBOR_PROJECT}/blog-frontend:latest"
+    docker push "${HARBOR_HOST}/${HARBOR_PROJECT}/blog-frontend:${IMAGE_TAG}"
+    docker push "${HARBOR_HOST}/${HARBOR_PROJECT}/blog-frontend:latest"
+    log_success "Pushed blog-frontend:${IMAGE_TAG} to Harbor"
+
+    log_success "All images pushed to Harbor!"
+}
+
 update_helm_values() {
     log_info "Updating Helm values with image tag: $IMAGE_TAG"
+
+    # Harbor registry path accessible from inside the cluster
+    local HARBOR_REGISTRY="harbor.registry/${HARBOR_PROJECT}"
 
     # Update spring-api values
     local SPRING_VALUES="$SCRIPT_DIR/charts/spring-api/values.yaml"
     if [ -f "$SPRING_VALUES" ]; then
         # Use sed to update image repository and tag
-        sed -i.bak "s|repository: .*|repository: blog-api|" "$SPRING_VALUES"
+        sed -i.bak "s|repository: .*|repository: ${HARBOR_REGISTRY}/blog-api|" "$SPRING_VALUES"
         sed -i.bak "s|tag: .*|tag: \"${IMAGE_TAG}\"|" "$SPRING_VALUES"
         rm -f "${SPRING_VALUES}.bak"
         log_success "Updated spring-api values.yaml"
@@ -232,7 +298,7 @@ update_helm_values() {
     # Update frontend-ui values
     local FRONTEND_VALUES="$SCRIPT_DIR/charts/frontend-ui/values.yaml"
     if [ -f "$FRONTEND_VALUES" ]; then
-        sed -i.bak "s|repository: .*|repository: blog-frontend|" "$FRONTEND_VALUES"
+        sed -i.bak "s|repository: .*|repository: ${HARBOR_REGISTRY}/blog-frontend|" "$FRONTEND_VALUES"
         sed -i.bak "s|tag: .*|tag: \"${IMAGE_TAG}\"|" "$FRONTEND_VALUES"
         rm -f "${FRONTEND_VALUES}.bak"
         log_success "Updated frontend-ui values.yaml"
@@ -273,7 +339,7 @@ commit_and_push() {
 }
 
 build_and_load_images() {
-    log_info "Building and loading application images..."
+    log_info "Building application images..."
     log_info "Image tag: ${IMAGE_TAG}"
     echo ""
 
@@ -283,6 +349,7 @@ build_and_load_images() {
     build_frontend_ui
     echo ""
 
+    # Load images to Kind as fallback (in case Harbor push fails)
     load_images_to_kind
     echo ""
 
@@ -309,11 +376,15 @@ deploy_argocd() {
     kubectl create namespace "$ARGOCD_NAMESPACE" --dry-run=client -o yaml 2>/dev/null | kctl apply -f -
 
     # Install or upgrade ArgoCD
-    helm upgrade --install argocd "$SCRIPT_DIR/argocd" \
+    if ! helm upgrade --install argocd "$SCRIPT_DIR/argocd" \
         --namespace "$ARGOCD_NAMESPACE" \
         --wait \
-        --timeout 10m \
-        2>&1 | grep -v "unrecognized format" || true
+        --timeout 10m; then
+        log_error "ArgoCD Helm install failed. Checking status..."
+        helm status argocd -n "$ARGOCD_NAMESPACE" || true
+        kubectl get pods -n "$ARGOCD_NAMESPACE"
+        return 1
+    fi
 
     log_success "ArgoCD deployed successfully!"
 }
@@ -326,22 +397,132 @@ wait_for_argocd() {
     log_success "All ArgoCD pods are ready!"
 }
 
-get_argocd_password() {
-    log_info "Retrieving ArgoCD admin password..."
+wait_for_argocd_apps() {
+    log_info "Waiting for ArgoCD to sync applications..."
 
-    # Wait for the secret to be created
+    local max_attempts=60
+    local attempt=1
+
+    # Wait for the apps Application to exist
+    while [ $attempt -le 30 ]; do
+        if kubectl get application apps -n "$ARGOCD_NAMESPACE" &>/dev/null; then
+            log_success "ArgoCD apps application found"
+            break
+        fi
+        echo -n "."
+        sleep 5
+        attempt=$((attempt + 1))
+    done
+
+    # Wait for Harbor to be deployed (registry namespace and pods)
+    log_info "Waiting for Harbor to be deployed by ArgoCD..."
+    attempt=1
+    while [ $attempt -le $max_attempts ]; do
+        if kubectl get ns registry &>/dev/null; then
+            # Check if Harbor pods are running
+            local harbor_ready=$(kubectl get pods -n registry -l app.kubernetes.io/name=harbor -o jsonpath='{.items[*].status.phase}' 2>/dev/null | grep -c "Running" || echo "0")
+            if [ "$harbor_ready" -ge 1 ]; then
+                log_success "Harbor pods are starting..."
+                break
+            fi
+        fi
+        echo -n "."
+        sleep 5
+        attempt=$((attempt + 1))
+    done
+
+    if [ $attempt -gt $max_attempts ]; then
+        log_warning "Harbor not yet deployed. Continuing anyway..."
+    fi
+}
+
+configure_kind_for_harbor() {
+    log_info "Configuring Kind nodes for Harbor registry access..."
+
+    # Wait for Harbor service to get an IP
+    local harbor_ip=""
     for i in {1..30}; do
-        if kubectl get secret argocd-initial-admin-secret -n "$ARGOCD_NAMESPACE" &>/dev/null; then
+        harbor_ip=$(kubectl get svc harbor -n registry -o jsonpath='{.spec.clusterIP}' 2>/dev/null || echo "")
+        if [ -n "$harbor_ip" ]; then
             break
         fi
         sleep 2
     done
 
-    ARGOCD_PASSWORD=$(kubectl -n "$ARGOCD_NAMESPACE" get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" 2>/dev/null | base64 -d)
+    if [ -z "$harbor_ip" ]; then
+        log_warning "Could not get Harbor service IP. Skipping Kind node configuration."
+        return 0
+    fi
+
+    log_info "Harbor service IP: $harbor_ip"
+
+    # Configure each Kind node
+    for node in $(kind get nodes --name "$CLUSTER_NAME" 2>/dev/null); do
+        log_info "Configuring node: $node"
+
+        # Add Harbor to /etc/hosts
+        docker exec "$node" sh -c "grep -q 'harbor.registry' /etc/hosts || echo '$harbor_ip harbor.registry' >> /etc/hosts"
+
+        # Configure containerd for insecure registry
+        docker exec "$node" mkdir -p /etc/containerd/certs.d/harbor.registry
+        docker exec "$node" sh -c 'cat > /etc/containerd/certs.d/harbor.registry/hosts.toml << EOF
+server = "http://harbor.registry"
+
+[host."http://harbor.registry"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = true
+EOF'
+
+        # Add registry config path to containerd config if not present
+        docker exec "$node" sh -c '
+            if ! grep -q "config_path.*certs.d" /etc/containerd/config.toml 2>/dev/null; then
+                cat >> /etc/containerd/config.toml << EOF
+
+[plugins."io.containerd.grpc.v1.cri".registry]
+  config_path = "/etc/containerd/certs.d"
+EOF
+            fi
+        '
+
+        # Restart containerd
+        docker exec "$node" systemctl restart containerd
+    done
+
+    log_success "Kind nodes configured for Harbor registry!"
+
+    # Give containerd time to restart
+    sleep 5
+}
+
+get_argocd_password() {
+    log_info "Retrieving ArgoCD admin password..."
+
+    # Try different secret names used by different ArgoCD versions/charts
+    local secret_names=("argocd-initial-admin-secret" "argocd-argo-cd-initial-admin-secret" "argocd-secret")
+
+    for secret_name in "${secret_names[@]}"; do
+        # Wait for the secret to be created
+        for i in {1..10}; do
+            if kubectl get secret "$secret_name" -n "$ARGOCD_NAMESPACE" &>/dev/null; then
+                if [ "$secret_name" = "argocd-secret" ]; then
+                    # argocd-secret stores bcrypt hash, not the actual password
+                    log_info "Found argocd-secret but it contains hashed password"
+                    break
+                fi
+                ARGOCD_PASSWORD=$(kubectl -n "$ARGOCD_NAMESPACE" get secret "$secret_name" -o jsonpath="{.data.password}" 2>/dev/null | base64 -d)
+                if [ -n "$ARGOCD_PASSWORD" ]; then
+                    log_success "Retrieved password from $secret_name"
+                    return 0
+                fi
+            fi
+            sleep 2
+        done
+    done
 
     if [ -z "$ARGOCD_PASSWORD" ]; then
-        log_warning "Could not retrieve initial admin password. It may have been deleted or changed."
-        log_info "You can reset the password using: argocd admin initial-password -n $ARGOCD_NAMESPACE"
+        log_warning "Could not retrieve initial admin password."
+        log_info "Try: kubectl -n $ARGOCD_NAMESPACE get secret -o name | xargs -I {} kubectl -n $ARGOCD_NAMESPACE get {} -o yaml"
+        log_info "Or reset with: argocd admin initial-password -n $ARGOCD_NAMESPACE"
     fi
 }
 
@@ -411,7 +592,9 @@ main() {
     if [ "$BUILD_ONLY" = true ]; then
         build_and_load_images
         echo ""
-        log_success "Images rebuilt and loaded. Push changes to trigger ArgoCD sync."
+        push_images_to_harbor
+        echo ""
+        log_success "Images rebuilt and pushed to Harbor. ArgoCD will sync automatically."
         exit 0
     fi
 
@@ -435,9 +618,22 @@ main() {
     wait_for_argocd
     echo ""
 
+    # Wait for ArgoCD to sync and deploy apps (especially Harbor)
+    wait_for_argocd_apps
+    echo ""
+
+    # Configure Kind nodes to access Harbor registry
+    configure_kind_for_harbor
+    echo ""
+
     get_argocd_password
 
     print_summary
+
+    if [ "$SKIP_BUILD" = false ]; then
+        push_images_to_harbor
+        echo ""
+    fi
 }
 
 # Run main function
