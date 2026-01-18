@@ -1,0 +1,59 @@
+# Ingress NGINX configuration for Kind cluster
+ingress-nginx:
+  controller:
+    # Use hostPort for Kind cluster (ports 80/443 are mapped in kind-config.yaml)
+    hostPort:
+      enabled: true
+      ports:
+        http: 80
+        https: 443
+
+    # Required for Kind: run on control-plane node with ingress-ready label
+    nodeSelector:
+      ingress-ready: "true"
+
+    # Tolerate control-plane taint
+    tolerations:
+      - key: "node-role.kubernetes.io/control-plane"
+        operator: "Exists"
+        effect: "NoSchedule"
+
+    # Use host network for direct access
+    hostNetwork: false
+
+    # Service configuration
+    service:
+      type: NodePort
+      nodePorts:
+        http: 80
+        https: 443
+
+    # Resource limits
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+    # Enable metrics for Prometheus
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+        namespace: monitoring
+
+    # Admission webhooks
+    admissionWebhooks:
+      enabled: true
+
+    # Update strategy
+    updateStrategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 1
+
+  # Default backend (optional)
+  defaultBackend:
+    enabled: false
