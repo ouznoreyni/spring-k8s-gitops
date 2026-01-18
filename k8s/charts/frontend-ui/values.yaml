@@ -3,8 +3,8 @@
 replicaCount: 1
 
 image:
-  repository: frontend-ui
-  tag: latest
+  repository: blog-frontend
+  tag: "latest"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []

@@ -3,8 +3,8 @@
 replicaCount: 1
 
 image:
-  repository: spring-api
-  tag: latest
+  repository: blog-api
+  tag: "latest"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []

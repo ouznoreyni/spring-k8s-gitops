@@ -20,6 +20,12 @@ ARGOCD_NAMESPACE="argocd"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
+# Image configuration
+IMAGE_REGISTRY="local"
+GIT_SHORT_SHA=$(git -C "$PROJECT_ROOT" rev-parse --short HEAD 2>/dev/null || echo "dev")
+BUILD_TIMESTAMP=$(date +%Y%m%d%H%M%S)
+IMAGE_TAG="${GIT_SHORT_SHA}-${BUILD_TIMESTAMP}"
+
 # Functions
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
@@ -39,6 +45,13 @@ log_error() {
 
 check_prerequisites() {
     log_info "Checking prerequisites..."
+
+    # Check docker
+    if ! command -v docker &> /dev/null; then
+        log_error "docker is not installed. Please install docker first."
+        exit 1
+    fi
+    log_success "docker is installed: $(docker --version)"
 
     # Check kind
     if ! command -v kind &> /dev/null; then
@@ -107,6 +120,142 @@ add_helm_repos() {
     log_success "Helm repositories configured!"
 }
 
+build_spring_api() {
+    log_info "Building Spring API image with tag: $IMAGE_TAG"
+
+    local SPRING_API_DIR="$PROJECT_ROOT/apps/spring-api"
+
+    if [ ! -f "$SPRING_API_DIR/Dockerfile" ]; then
+        log_error "Dockerfile not found at $SPRING_API_DIR/Dockerfile"
+        return 1
+    fi
+
+    # Build the image
+    docker build \
+        -t "blog-api:${IMAGE_TAG}" \
+        -t "blog-api:latest" \
+        --label "git.commit=${GIT_SHORT_SHA}" \
+        --label "build.timestamp=${BUILD_TIMESTAMP}" \
+        "$SPRING_API_DIR"
+
+    log_success "Spring API image built: blog-api:${IMAGE_TAG}"
+}
+
+build_frontend_ui() {
+    log_info "Building Frontend UI image with tag: $IMAGE_TAG"
+
+    local FRONTEND_DIR="$PROJECT_ROOT/apps/frontend-ui"
+
+    # Check if Dockerfile exists, if not create one
+    if [ ! -f "$FRONTEND_DIR/Dockerfile" ]; then
+        log_warning "Dockerfile not found. Creating default Dockerfile for React/Vite app..."
+        cat > "$FRONTEND_DIR/Dockerfile" << 'EOF'
+# Build stage
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Production stage
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf 2>/dev/null || true
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+EOF
+    fi
+
+    # Create nginx.conf if not exists
+    if [ ! -f "$FRONTEND_DIR/nginx.conf" ]; then
+        log_info "Creating nginx.conf for SPA routing..."
+        cat > "$FRONTEND_DIR/nginx.conf" << 'EOF'
+server {
+    listen 80;
+    server_name localhost;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /api/ {
+        proxy_pass http://blog-api:8080/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+EOF
+    fi
+
+    # Build the image
+    docker build \
+        -t "blog-frontend:${IMAGE_TAG}" \
+        -t "blog-frontend:latest" \
+        --label "git.commit=${GIT_SHORT_SHA}" \
+        --label "build.timestamp=${BUILD_TIMESTAMP}" \
+        "$FRONTEND_DIR"
+
+    log_success "Frontend UI image built: blog-frontend:${IMAGE_TAG}"
+}
+
+load_images_to_kind() {
+    log_info "Loading images into Kind cluster..."
+
+    kind load docker-image "blog-api:${IMAGE_TAG}" --name "$CLUSTER_NAME"
+    kind load docker-image "blog-api:latest" --name "$CLUSTER_NAME"
+    log_success "Loaded blog-api:${IMAGE_TAG}"
+
+    kind load docker-image "blog-frontend:${IMAGE_TAG}" --name "$CLUSTER_NAME"
+    kind load docker-image "blog-frontend:latest" --name "$CLUSTER_NAME"
+    log_success "Loaded blog-frontend:${IMAGE_TAG}"
+
+    log_success "All images loaded into Kind cluster!"
+}
+
+update_helm_values() {
+    log_info "Updating Helm values with image tag: $IMAGE_TAG"
+
+    # Update spring-api values
+    local SPRING_VALUES="$SCRIPT_DIR/charts/spring-api/values.yaml"
+    if [ -f "$SPRING_VALUES" ]; then
+        # Use sed to update image repository and tag
+        sed -i.bak "s|repository: .*|repository: blog-api|" "$SPRING_VALUES"
+        sed -i.bak "s|tag: .*|tag: \"${IMAGE_TAG}\"|" "$SPRING_VALUES"
+        rm -f "${SPRING_VALUES}.bak"
+        log_success "Updated spring-api values.yaml"
+    fi
+
+    # Update frontend-ui values
+    local FRONTEND_VALUES="$SCRIPT_DIR/charts/frontend-ui/values.yaml"
+    if [ -f "$FRONTEND_VALUES" ]; then
+        sed -i.bak "s|repository: .*|repository: blog-frontend|" "$FRONTEND_VALUES"
+        sed -i.bak "s|tag: .*|tag: \"${IMAGE_TAG}\"|" "$FRONTEND_VALUES"
+        rm -f "${FRONTEND_VALUES}.bak"
+        log_success "Updated frontend-ui values.yaml"
+    fi
+}
+
+build_and_load_images() {
+    log_info "Building and loading application images..."
+    log_info "Image tag: ${IMAGE_TAG}"
+    echo ""
+
+    build_spring_api
+    echo ""
+
+    build_frontend_ui
+    echo ""
+
+    load_images_to_kind
+    echo ""
+
+    update_helm_values
+}
+
 update_argocd_dependencies() {
     log_info "Updating ArgoCD Helm dependencies..."
 
@@ -166,6 +315,8 @@ print_summary() {
     echo -e "${GREEN}Setup Complete!${NC}"
     echo "=============================================="
     echo ""
+    echo -e "${BLUE}Image Tag:${NC} ${IMAGE_TAG}"
+    echo ""
     echo -e "${BLUE}ArgoCD Access:${NC}"
     echo "  Username: admin"
     if [ -n "$ARGOCD_PASSWORD" ]; then
@@ -174,20 +325,19 @@ print_summary() {
         echo "  Password: Run 'kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=\"{.data.password}\" | base64 -d'"
     fi
     echo ""
-    echo -e "${BLUE}Access Options:${NC}"
-    echo "  Option 1 (NodePort):    http://localhost:30080"
-    echo "  Option 2 (Port-forward): Run the command below, then access http://localhost:8080"
-    echo "    kubectl port-forward svc/argocd-argo-cd-server -n argocd 8080:80"
+    echo -e "${BLUE}Access URLs:${NC}"
+    echo "  ArgoCD:      http://localhost:30080"
+    echo "  Prometheus:  http://localhost:30090"
+    echo "  Grafana:     http://localhost:30030"
+    echo "  Harbor:      http://localhost:30002"
+    echo ""
+    echo -e "${BLUE}Port-forward (if NodePort not working):${NC}"
+    echo "  kubectl port-forward svc/argocd-argo-cd-server -n argocd 8080:80"
     echo ""
     echo -e "${BLUE}Useful Commands:${NC}"
-    echo "  Check pods:     kubectl get pods -n argocd"
-    echo "  Check services: kubectl get svc -n argocd"
-    echo "  Get password:   kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=\"{.data.password}\" | base64 -d"
-    echo ""
-    echo -e "${BLUE}Next Steps:${NC}"
-    echo "  1. Access ArgoCD UI"
-    echo "  2. Login with admin credentials"
-    echo "  3. Deploy applications using: kubectl apply -f k8s/apps/<app>.yaml"
+    echo "  Check all pods:  kubectl get pods --all-namespaces"
+    echo "  Check apps:      kubectl get applications -n argocd"
+    echo "  Rebuild images:  ./setup.sh --build-only"
     echo ""
 }
 
@@ -199,14 +349,46 @@ main() {
     echo "=============================================="
     echo ""
 
+    # Parse arguments
+    BUILD_ONLY=false
+    SKIP_BUILD=false
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --build-only)
+                BUILD_ONLY=true
+                shift
+                ;;
+            --skip-build)
+                SKIP_BUILD=true
+                shift
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+
     check_prerequisites
     echo ""
+
+    if [ "$BUILD_ONLY" = true ]; then
+        build_and_load_images
+        echo ""
+        log_success "Images rebuilt and loaded. Push changes to trigger ArgoCD sync."
+        exit 0
+    fi
 
     create_cluster
     echo ""
 
     add_helm_repos
     echo ""
+
+    if [ "$SKIP_BUILD" = false ]; then
+        build_and_load_images
+        echo ""
+    fi
 
     update_argocd_dependencies
     echo ""
