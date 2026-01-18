@@ -1,10 +1,13 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: grafana
+  name: infra-grafana
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
+  labels:
+    app.kubernetes.io/component: visualization
+    app.kubernetes.io/part-of: spring-k8s-gitops
 spec:
   project: default
   source:
@@ -12,6 +15,7 @@ spec:
     targetRevision: HEAD
     path: k8s/charts/grafana
     helm:
+      releaseName: monitoring-grafana
       valueFiles:
         - values.yaml
   destination:

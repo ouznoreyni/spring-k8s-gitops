@@ -1,10 +1,13 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: spring-api
+  name: app-blog-api
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
+  labels:
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: spring-k8s-gitops
 spec:
   project: default
   source:
@@ -12,11 +15,12 @@ spec:
     targetRevision: HEAD
     path: k8s/charts/spring-api
     helm:
+      releaseName: blog-api
       valueFiles:
         - values.yaml
   destination:
     server: https://kubernetes.default.svc
-    namespace: spring-api
+    namespace: blog
   syncPolicy:
     automated:
       prune: true

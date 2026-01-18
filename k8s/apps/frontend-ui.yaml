@@ -1,10 +1,13 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: frontend-ui
+  name: app-blog-frontend
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
+  labels:
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: spring-k8s-gitops
 spec:
   project: default
   source:
@@ -12,11 +15,12 @@ spec:
     targetRevision: HEAD
     path: k8s/charts/frontend-ui
     helm:
+      releaseName: blog-frontend
       valueFiles:
         - values.yaml
   destination:
     server: https://kubernetes.default.svc
-    namespace: frontend-ui
+    namespace: blog
   syncPolicy:
     automated:
       prune: true

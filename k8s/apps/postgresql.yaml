@@ -1,10 +1,13 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: postgresql
+  name: infra-postgresql
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
+  labels:
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: spring-k8s-gitops
 spec:
   project: default
   source:
@@ -12,6 +15,7 @@ spec:
     targetRevision: HEAD
     path: k8s/charts/postgresql
     helm:
+      releaseName: blog-db
       valueFiles:
         - values.yaml
   destination:

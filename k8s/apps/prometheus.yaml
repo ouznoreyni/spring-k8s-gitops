@@ -1,10 +1,13 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: prometheus
+  name: infra-prometheus
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
+  labels:
+    app.kubernetes.io/component: monitoring
+    app.kubernetes.io/part-of: spring-k8s-gitops
 spec:
   project: default
   source:
@@ -12,6 +15,7 @@ spec:
     targetRevision: HEAD
     path: k8s/charts/prometheus
     helm:
+      releaseName: monitoring-stack
       valueFiles:
         - values.yaml
   destination:
