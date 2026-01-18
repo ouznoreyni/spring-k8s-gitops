@@ -4,7 +4,7 @@ replicaCount: 1
 
 image:
   repository: blog-api
-  tag: "8115c47-20260118171838"
+  tag: "366a09a-20260118172401"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
