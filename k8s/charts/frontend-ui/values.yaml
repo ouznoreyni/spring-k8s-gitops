@@ -4,7 +4,7 @@ replicaCount: 1
 
 image:
   repository: harbor.registry/library/blog-frontend
-  tag: "7aea773-20260118173948"
+  tag: "fdff675-20260118180053"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -72,7 +72,7 @@ affinity: {}
 # Environment variables
 env:
   - name: VITE_API_URL
-    value: "http://spring-api:8080"
+    value: "http://blog-api-spring-api:8080"
 
 # ConfigMap for nginx configuration
 nginxConfig:
