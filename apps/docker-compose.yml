@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: spring-api-db
+    environment:
+      POSTGRES_DB: blogdb
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d blogdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - blog-network
+
+  backend:
+    build:
+      context: ./spring-api
+      dockerfile: Dockerfile
+    container_name: spring-api-app
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./spring-api/.env
+    environment:
+      - DB_URL=r2dbc:postgresql://db:5432/blogdb
+      - JDBC_URL=jdbc:postgresql://db:5432/blogdb
+      - SPRING_PROFILES_ACTIVE=prod
+    restart: always
+    networks:
+      - blog-network
+
+  frontend:
+    build:
+      context: ./frontend-ui
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:8080/api/articles
+        - VITE_AUTH_URL=http://localhost:8080/api/auth
+    container_name: frontend-ui-app
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    restart: always
+    networks:
+      - blog-network
+
+networks:
+  blog-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
