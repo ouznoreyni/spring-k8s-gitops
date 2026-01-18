@@ -3,8 +3,8 @@
 replicaCount: 1
 
 image:
-  repository: blog-api
-  tag: "366a09a-20260118172401"
+  repository: harbor.registry/library/blog-api
+  tag: "7aea773-20260118173948"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
