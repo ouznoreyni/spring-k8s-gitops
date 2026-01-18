@@ -1,0 +1,135 @@
+# Prometheus stack configuration
+kube-prometheus-stack:
+  # Prometheus configuration
+  prometheus:
+    enabled: true
+    prometheusSpec:
+      replicas: 1
+      retention: 7d
+      retentionSize: "5GB"
+
+      # Resource limits
+      resources:
+        requests:
+          memory: 400Mi
+          cpu: 200m
+        limits:
+          memory: 1Gi
+          cpu: 500m
+
+      # Storage configuration
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 10Gi
+
+      # Service monitors for custom apps
+      serviceMonitorSelectorNilUsesHelmValues: false
+      podMonitorSelectorNilUsesHelmValues: false
+
+      # Additional scrape configs for Spring Boot apps
+      additionalScrapeConfigs:
+        - job_name: 'spring-api'
+          metrics_path: '/actuator/prometheus'
+          kubernetes_sd_configs:
+            - role: pod
+              namespaces:
+                names:
+                  - spring-api
+          relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+              action: keep
+              regex: spring-api
+
+    # Service configuration
+    service:
+      type: NodePort
+      nodePort: 30090
+
+  # Alertmanager configuration
+  alertmanager:
+    enabled: true
+    alertmanagerSpec:
+      replicas: 1
+      resources:
+        requests:
+          memory: 128Mi
+          cpu: 50m
+      storage:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 2Gi
+    service:
+      type: NodePort
+      nodePort: 30093
+
+  # Grafana - disabled here (separate chart)
+  grafana:
+    enabled: false
+
+  # Prometheus Operator
+  prometheusOperator:
+    enabled: true
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 50m
+
+  # Node exporter for node metrics
+  nodeExporter:
+    enabled: true
+    resources:
+      requests:
+        memory: 64Mi
+        cpu: 50m
+
+  # Kube state metrics
+  kubeStateMetrics:
+    enabled: true
+
+  # Default rules and alerts
+  defaultRules:
+    create: true
+    rules:
+      alertmanager: true
+      etcd: false  # Disabled for Kind
+      configReloaders: true
+      general: true
+      k8s: true
+      kubeApiserverAvailability: true
+      kubeApiserverBurnrate: true
+      kubeApiserverHistogram: true
+      kubeApiserverSlos: true
+      kubeControllerManager: false  # Disabled for Kind
+      kubelet: true
+      kubeProxy: false  # Disabled for Kind
+      kubePrometheusGeneral: true
+      kubePrometheusNodeRecording: true
+      kubernetesApps: true
+      kubernetesResources: true
+      kubernetesStorage: true
+      kubernetesSystem: true
+      kubeSchedulerAlerting: false  # Disabled for Kind
+      kubeSchedulerRecording: false  # Disabled for Kind
+      network: true
+      node: true
+      nodeExporterAlerting: true
+      nodeExporterRecording: true
+      prometheus: true
+      prometheusOperator: true
+
+  # Prometheus scraping config for control plane components
+  kubeControllerManager:
+    enabled: false
+  kubeScheduler:
+    enabled: false
+  kubeEtcd:
+    enabled: false
+  kubeProxy:
+    enabled: false

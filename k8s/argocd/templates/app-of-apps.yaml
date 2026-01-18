@@ -1,0 +1,27 @@
+{{- if .Values.appOfApps.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: apps
+  namespace: argocd
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: {{ .Values.appOfApps.repoURL }}
+    targetRevision: {{ .Values.appOfApps.targetRevision | default "HEAD" }}
+    path: {{ .Values.appOfApps.path | default "k8s/apps" }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: {{ .Values.appOfApps.prune | default true }}
+      selfHeal: {{ .Values.appOfApps.selfHeal | default true }}
+    syncOptions:
+      - CreateNamespace=true
+{{- end }}

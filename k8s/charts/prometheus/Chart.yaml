@@ -1,0 +1,11 @@
+apiVersion: v2
+name: prometheus
+description: Prometheus monitoring stack for spring-k8s-gitops project
+type: application
+version: 1.0.0
+appVersion: "3.2.1"
+
+dependencies:
+  - name: kube-prometheus-stack
+    version: 81.0.0
+    repository: https://prometheus-community.github.io/helm-charts

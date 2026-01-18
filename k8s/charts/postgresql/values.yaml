@@ -1,0 +1,113 @@
+# PostgreSQL configuration
+postgresql:
+  # Authentication
+  auth:
+    postgresPassword: "postgrespassword"
+    username: "bloguser"
+    password: "blogpassword"
+    database: "blogdb"
+
+  # Architecture: standalone or replication
+  architecture: standalone
+
+  # Primary configuration
+  primary:
+    # Persistence
+    persistence:
+      enabled: true
+      size: 5Gi
+      storageClass: ""
+
+    # Resources
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+
+    # Node ports (for local development)
+    service:
+      type: ClusterIP
+      ports:
+        postgresql: 5432
+      # Uncomment for NodePort access
+      # type: NodePort
+      # nodePorts:
+      #   postgresql: 30432
+
+    # Pod security context
+    podSecurityContext:
+      enabled: true
+      fsGroup: 1001
+
+    # Container security context
+    containerSecurityContext:
+      enabled: true
+      runAsUser: 1001
+      runAsNonRoot: true
+
+    # Liveness and readiness probes
+    livenessProbe:
+      enabled: true
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 6
+      successThreshold: 1
+
+    readinessProbe:
+      enabled: true
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 6
+      successThreshold: 1
+
+    # Init containers for custom initialization
+    initdb:
+      scripts: {}
+      # Example: Create additional databases or users
+      # scripts:
+      #   init.sql: |
+      #     CREATE DATABASE anotherdb;
+      #     CREATE USER anotheruser WITH PASSWORD 'password';
+      #     GRANT ALL PRIVILEGES ON DATABASE anotherdb TO anotheruser;
+
+  # Read replicas (disabled for local dev)
+  readReplicas:
+    replicaCount: 0
+
+  # Metrics (Prometheus)
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+      # Enable when Prometheus is installed
+      # enabled: true
+      # namespace: monitoring
+      # interval: 30s
+    resources:
+      requests:
+        memory: 32Mi
+        cpu: 10m
+      limits:
+        memory: 64Mi
+        cpu: 50m
+
+  # Backup configuration (disabled by default)
+  backup:
+    enabled: false
+    # cronjob:
+    #   schedule: "0 2 * * *"
+    #   storage:
+    #     size: 5Gi
+
+  # Network policies
+  networkPolicy:
+    enabled: false
+
+  # Volume permissions init container
+  volumePermissions:
+    enabled: false

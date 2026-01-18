@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: spring-k8s-gitops
+  namespace: argocd
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: Spring K8s GitOps Project
+
+  # Allow manifests to deploy from any Git repository
+  sourceRepos:
+    - '*'
+
+  # Allow apps to be deployed to any namespace in the local cluster
+  destinations:
+    - namespace: '*'
+      server: https://kubernetes.default.svc
+
+  # Allow all cluster-scoped resources to be managed
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+
+  # Allow all namespace-scoped resources
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

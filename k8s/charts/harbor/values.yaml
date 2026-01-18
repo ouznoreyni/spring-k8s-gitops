@@ -1,0 +1,115 @@
+# Harbor container registry configuration
+harbor:
+  # Expose configuration
+  expose:
+    type: nodePort
+    tls:
+      enabled: false
+    nodePort:
+      ports:
+        http:
+          nodePort: 30002
+        https:
+          nodePort: 30003
+
+  # External URL for Harbor
+  externalURL: http://localhost:30002
+
+  # Internal TLS configuration
+  internalTLS:
+    enabled: false
+
+  # Persistence configuration
+  persistence:
+    enabled: true
+    persistentVolumeClaim:
+      registry:
+        size: 5Gi
+      jobservice:
+        jobLog:
+          size: 1Gi
+      database:
+        size: 1Gi
+      redis:
+        size: 1Gi
+      trivy:
+        size: 2Gi
+
+  # Harbor admin password
+  harborAdminPassword: "Harbor12345"
+
+  # Secret key for encryption (change in production)
+  secretKey: "not-a-secure-key-"
+
+  # PostgreSQL configuration (internal)
+  database:
+    type: internal
+
+  # Redis configuration (internal)
+  redis:
+    type: internal
+
+  # Core configuration
+  core:
+    replicas: 1
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+
+  # Job service configuration
+  jobservice:
+    replicas: 1
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+
+  # Registry configuration
+  registry:
+    replicas: 1
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+
+  # Trivy vulnerability scanner
+  trivy:
+    enabled: true
+    replicas: 1
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+
+  # Notary configuration (disabled for local dev)
+  notary:
+    enabled: false
+
+  # Chartmuseum for Helm charts
+  chartmuseum:
+    enabled: true
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 50m
+
+  # Metrics configuration
+  metrics:
+    enabled: true
+    core:
+      path: /metrics
+      port: 8001
+    registry:
+      path: /metrics
+      port: 8001
+    jobservice:
+      path: /metrics
+      port: 8001
+    exporter:
+      path: /metrics
+      port: 8001
+
+  # Update strategy
+  updateStrategy:
+    type: RollingUpdate

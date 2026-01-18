@@ -1,0 +1,140 @@
+# Grafana configuration
+grafana:
+  # Replicas
+  replicas: 1
+
+  # Admin credentials
+  adminUser: admin
+  adminPassword: admin
+
+  # Service configuration
+  service:
+    type: NodePort
+    nodePort: 30030
+
+  # Resource limits
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 200m
+
+  # Persistence
+  persistence:
+    enabled: true
+    size: 2Gi
+
+  # Datasources configuration
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          url: http://prometheus-kube-prometheus-prometheus.monitoring:9090
+          access: proxy
+          isDefault: true
+          editable: false
+
+  # Dashboard providers
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'default'
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+        - name: 'kubernetes'
+          orgId: 1
+          folder: 'Kubernetes'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/kubernetes
+        - name: 'spring'
+          orgId: 1
+          folder: 'Spring Boot'
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/spring
+
+  # Pre-configured dashboards from Grafana.com
+  dashboards:
+    default:
+      node-exporter:
+        gnetId: 1860
+        revision: 37
+        datasource: Prometheus
+    kubernetes:
+      k8s-cluster:
+        gnetId: 7249
+        revision: 1
+        datasource: Prometheus
+      k8s-pods:
+        gnetId: 6336
+        revision: 1
+        datasource: Prometheus
+      k8s-deployments:
+        gnetId: 8588
+        revision: 1
+        datasource: Prometheus
+    spring:
+      spring-boot-statistics:
+        gnetId: 12464
+        revision: 2
+        datasource: Prometheus
+      jvm-micrometer:
+        gnetId: 4701
+        revision: 21
+        datasource: Prometheus
+
+  # Grafana.ini configuration
+  grafana.ini:
+    server:
+      root_url: "%(protocol)s://%(domain)s:%(http_port)s/grafana/"
+      serve_from_sub_path: false
+    auth:
+      disable_login_form: false
+    auth.anonymous:
+      enabled: false
+    security:
+      admin_user: admin
+      allow_embedding: true
+    users:
+      allow_sign_up: false
+    log:
+      mode: console
+      level: info
+
+  # Sidecar for automatic dashboard discovery
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: ALL
+    datasources:
+      enabled: true
+      label: grafana_datasource
+      labelValue: "1"
+      searchNamespace: ALL
+
+  # Plugins to install
+  plugins:
+    - grafana-clock-panel
+    - grafana-piechart-panel
+    - grafana-kubernetes-app
+
+  # Init containers
+  initChownData:
+    enabled: true

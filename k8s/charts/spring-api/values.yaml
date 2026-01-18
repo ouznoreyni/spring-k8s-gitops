@@ -1,0 +1,111 @@
+# Spring API Helm chart values
+
+replicaCount: 1
+
+image:
+  repository: spring-api
+  tag: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: spring-api.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: http
+  initialDelaySeconds: 60
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 5
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Application configuration
+app:
+  # JWT configuration
+  jwt:
+    secret: "your-super-secret-jwt-key-change-in-production"
+    expiration: "86400000"  # 24 hours in milliseconds
+
+# PostgreSQL subchart configuration
+postgresql:
+  enabled: true
+  auth:
+    database: blogdb
+    username: bloguser
+    password: blogpassword
+    postgresPassword: postgrespassword
+  primary:
+    persistence:
+      enabled: true
+      size: 2Gi
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 100m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+
+# External database configuration (when postgresql.enabled=false)
+externalDatabase:
+  host: ""
+  port: 5432
+  database: blogdb
+  username: bloguser
+  password: ""
+  existingSecret: ""
+  existingSecretPasswordKey: "password"

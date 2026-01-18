@@ -1,0 +1,11 @@
+apiVersion: v2
+name: harbor
+description: Harbor container registry for spring-k8s-gitops project
+type: application
+version: 1.0.0
+appVersion: "2.14.1"
+
+dependencies:
+  - name: harbor
+    version: 1.18.1
+    repository: https://helm.goharbor.io
