@@ -4,7 +4,7 @@ replicaCount: 1
 
 image:
   repository: blog-frontend
-  tag: "latest"
+  tag: "12d6c7a-20260118143744"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
