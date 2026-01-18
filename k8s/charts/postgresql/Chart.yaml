@@ -3,9 +3,9 @@ name: postgresql
 description: PostgreSQL database for spring-k8s-gitops project
 type: application
 version: 1.0.0
-appVersion: "17.0"
+appVersion: "18.1.0"
 
 dependencies:
   - name: postgresql
-    version: 17.4.5
+    version: 18.2.0
     repository: https://charts.bitnami.com/bitnami
