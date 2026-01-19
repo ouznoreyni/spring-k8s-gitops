@@ -6,7 +6,7 @@ replicaCount: 3
 image:
   repository: blog-api
   tag: "5c0b570-20260119185210"
-  pullPolicy: Never
+  pullPolicy: IfNotPresent
 
 imagePullSecrets: []
 nameOverride: ""
