@@ -8,7 +8,8 @@ image:
   tag: "cd7d0ff-20260119172329"
   pullPolicy: IfNotPresent
 
-imagePullSecrets: []
+imagePullSecrets:
+  - name: harbor-registry-secret
 nameOverride: ""
 fullnameOverride: ""
 
