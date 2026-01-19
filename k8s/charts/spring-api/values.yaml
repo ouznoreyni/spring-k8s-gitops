@@ -1,6 +1,7 @@
 # Spring API Helm chart values
 
-replicaCount: 1
+# HA: Minimum 3 replicas for high availability
+replicaCount: 3
 
 image:
   repository: harbor.registry/library/blog-api
@@ -51,6 +52,9 @@ livenessProbe:
     port: http
   initialDelaySeconds: 60
   periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
 
 readinessProbe:
   httpGet:
@@ -58,16 +62,46 @@ readinessProbe:
     port: http
   initialDelaySeconds: 30
   periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+  successThreshold: 1
 
+# Startup probe for slow-starting containers
+startupProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 30
+
+# HA: Autoscaling enabled
 autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 3
-  targetCPUUtilizationPercentage: 80
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# HA: Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
 
 nodeSelector: {}
 tolerations: []
-affinity: {}
+
+# HA: Pod anti-affinity to spread across nodes
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: spring-api
+          topologyKey: kubernetes.io/hostname
 
 # Application configuration
 app:
@@ -99,6 +133,16 @@ postgresql:
     enabled: true
     serviceMonitor:
       enabled: false
+  # Network Policy for PostgreSQL
+  networkPolicy:
+    enabled: true
+    allowExternal: false
+    ingressRules:
+      primaryAccessOnlyFrom:
+        enabled: true
+        podSelector:
+          app.kubernetes.io/name: spring-api
+        namespaceSelector: {}
 
 # External database configuration (when postgresql.enabled=false)
 externalDatabase:
@@ -109,3 +153,11 @@ externalDatabase:
   password: ""
   existingSecret: ""
   existingSecretPasswordKey: "password"
+
+# Network Policy configuration
+networkPolicy:
+  enabled: true
+  # Additional ingress rules (optional)
+  additionalIngress: []
+  # Additional egress rules (optional)
+  additionalEgress: []

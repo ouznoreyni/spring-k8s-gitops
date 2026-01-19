@@ -1,6 +1,9 @@
 # Ingress NGINX configuration for Kind cluster
 ingress-nginx:
   controller:
+    # HA: Multiple replicas for high availability
+    replicaCount: 2
+
     # Use hostPort for Kind cluster (ports 80/443 are mapped in kind-config.yaml)
     hostPort:
       enabled: true
@@ -34,6 +37,29 @@ ingress-nginx:
         cpu: 500m
         memory: 512Mi
 
+    # HA: Liveness and readiness probes
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: 10254
+        scheme: HTTP
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 3
+      failureThreshold: 3
+      successThreshold: 1
+
+    readinessProbe:
+      httpGet:
+        path: /healthz
+        port: 10254
+        scheme: HTTP
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 3
+      failureThreshold: 3
+      successThreshold: 1
+
     # Enable metrics for Prometheus
     metrics:
       enabled: true
@@ -45,11 +71,41 @@ ingress-nginx:
     admissionWebhooks:
       enabled: true
 
-    # Update strategy
+    # HA: Update strategy for zero-downtime deployments
     updateStrategy:
       type: RollingUpdate
       rollingUpdate:
-        maxUnavailable: 1
+        maxUnavailable: 0
+        maxSurge: 1
+
+    # HA: Pod anti-affinity to spread across nodes
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: ingress-nginx
+                  app.kubernetes.io/component: controller
+              topologyKey: kubernetes.io/hostname
+
+    # HA: Autoscaling
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+
+    # HA: Pod Disruption Budget
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
+
+    # Network Policy - allow all ingress traffic to controller
+    networkPolicy:
+      enabled: true
 
   # Default backend (optional)
   defaultBackend:

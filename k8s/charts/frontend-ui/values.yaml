@@ -1,6 +1,7 @@
 # Frontend UI Helm chart values
 
-replicaCount: 1
+# HA: Minimum 2 replicas for high availability
+replicaCount: 2
 
 image:
   repository: harbor.registry/library/blog-frontend
@@ -47,33 +48,64 @@ resources:
 
 livenessProbe:
   httpGet:
-    path: /
+    path: /health
     port: http
   initialDelaySeconds: 10
   periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+  successThreshold: 1
 
 readinessProbe:
   httpGet:
-    path: /
+    path: /health
     port: http
   initialDelaySeconds: 5
   periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+  successThreshold: 1
 
+# HA: Autoscaling enabled
 autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 3
-  targetCPUUtilizationPercentage: 80
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# HA: Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
 
 nodeSelector: {}
 tolerations: []
-affinity: {}
+
+# HA: Pod anti-affinity to spread across nodes
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: frontend-ui
+          topologyKey: kubernetes.io/hostname
 
 # Environment variables
 env:
   - name: VITE_API_URL
-    value: "http://blog-api-spring-api:8080"
+    value: "/api"
 
 # ConfigMap for nginx configuration
 nginxConfig:
   enabled: true
+
+# Network Policy configuration
+networkPolicy:
+  enabled: true
+  # Additional ingress rules (optional)
+  additionalIngress: []
+  # Additional egress rules (optional)
+  additionalEgress: []
