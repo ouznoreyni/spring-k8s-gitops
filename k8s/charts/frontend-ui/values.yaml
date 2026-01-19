@@ -4,7 +4,7 @@ replicaCount: 1
 
 image:
   repository: harbor.registry/library/blog-frontend
-  tag: "a3fff46-20260118234512"
+  tag: "3eec176-20260119000420"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -27,8 +27,8 @@ service:
   port: 80
 
 ingress:
-  enabled: false
-  className: ""
+  enabled: true
+  className: "nginx"
   annotations: {}
   hosts:
     - host: frontend.local
