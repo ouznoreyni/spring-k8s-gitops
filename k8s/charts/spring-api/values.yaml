@@ -4,7 +4,7 @@
 replicaCount: 3
 
 image:
-  repository: harbor.registry/library/blog-api
+  repository: harbor.local/library/blog-api
   tag: "1ef2512-20260119162002"
   pullPolicy: IfNotPresent
 
