@@ -4,12 +4,11 @@
 replicaCount: 2
 
 image:
-  repository: harbor.registry/library/blog-frontend
+  repository: harbor.local/library/blog-frontend
   tag: "90e4780-20260119174257"
   pullPolicy: IfNotPresent
 
-imagePullSecrets:
-  - name: harbor-registry-secret
+imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
