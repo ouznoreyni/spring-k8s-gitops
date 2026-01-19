@@ -31,7 +31,7 @@ public class SecurityConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/api/auth/**", "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/webjars/**").permitAll()
+                        .pathMatchers("/api/auth/**", "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/webjars/**", "/actuator/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/articles/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/articles/*/comments/**").permitAll()
                         .pathMatchers("/api/users/**").hasRole("ADMIN")
