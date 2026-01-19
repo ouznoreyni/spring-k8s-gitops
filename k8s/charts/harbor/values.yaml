@@ -2,18 +2,20 @@
 harbor:
   # Expose configuration
   expose:
-    type: nodePort
+    type: ingress
     tls:
       enabled: false
-    nodePort:
-      ports:
-        http:
-          nodePort: 30002
-        https:
-          nodePort: 30003
+    ingress:
+      hosts:
+        core: harbor.local
+      className: nginx
+      annotations:
+        nginx.ingress.kubernetes.io/proxy-body-size: "0"
+        nginx.ingress.kubernetes.io/proxy-read-timeout: "900"
+        nginx.ingress.kubernetes.io/proxy-send-timeout: "900"
 
   # External URL for Harbor
-  externalURL: http://localhost:30002
+  externalURL: http://harbor.local
 
   # Internal TLS configuration
   internalTLS:

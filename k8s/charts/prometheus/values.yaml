@@ -46,8 +46,17 @@ kube-prometheus-stack:
 
     # Service configuration
     service:
-      type: NodePort
-      nodePort: 30090
+      type: ClusterIP
+
+    # Ingress configuration
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - prometheus.local
+      paths:
+        - /
+      pathType: Prefix
 
   # Alertmanager configuration
   alertmanager:
@@ -66,8 +75,17 @@ kube-prometheus-stack:
               requests:
                 storage: 2Gi
     service:
-      type: NodePort
-      nodePort: 30093
+      type: ClusterIP
+
+    # Ingress configuration
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - alertmanager.local
+      paths:
+        - /
+      pathType: Prefix
 
   # Grafana - disabled here (separate chart)
   grafana:

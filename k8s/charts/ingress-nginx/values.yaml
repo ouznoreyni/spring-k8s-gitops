@@ -1,8 +1,8 @@
 # Ingress NGINX configuration for Kind cluster
 ingress-nginx:
   controller:
-    # HA: Multiple replicas for high availability
-    replicaCount: 2
+    # Single replica for Kind (only control-plane has ingress-ready label and hostPort mapping)
+    replicaCount: 1
 
     # Use hostPort for Kind cluster (ports 80/443 are mapped in kind-config.yaml)
     hostPort:
@@ -71,37 +71,24 @@ ingress-nginx:
     admissionWebhooks:
       enabled: true
 
-    # HA: Update strategy for zero-downtime deployments
+    # Update strategy for Kind (single replica with hostPort)
+    # Must use maxUnavailable: 1 because hostPort prevents running 2 pods on same ports
     updateStrategy:
       type: RollingUpdate
       rollingUpdate:
-        maxUnavailable: 0
-        maxSurge: 1
+        maxUnavailable: 1
+        maxSurge: 0
 
-    # HA: Pod anti-affinity to spread across nodes
-    affinity:
-      podAntiAffinity:
-        preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchLabels:
-                  app.kubernetes.io/name: ingress-nginx
-                  app.kubernetes.io/component: controller
-              topologyKey: kubernetes.io/hostname
+    # No anti-affinity for Kind (single replica on control-plane only)
+    affinity: {}
 
-    # HA: Autoscaling
+    # Autoscaling disabled for Kind (single node with hostPort)
     autoscaling:
-      enabled: true
-      minReplicas: 2
-      maxReplicas: 5
-      targetCPUUtilizationPercentage: 70
-      targetMemoryUtilizationPercentage: 80
+      enabled: false
 
-    # HA: Pod Disruption Budget
+    # Pod Disruption Budget disabled for Kind
     podDisruptionBudget:
-      enabled: true
-      minAvailable: 1
+      enabled: false
 
     # Network Policy - allow all ingress traffic to controller
     networkPolicy:

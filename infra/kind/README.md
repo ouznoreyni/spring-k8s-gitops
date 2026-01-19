@@ -36,7 +36,7 @@ Avant de créer le cluster, assurez-vous d'avoir installé :
 │  ┌─────────────────────────────────────────────────────────┐   │
 │  │                   CONTROL-PLANE                          │   │
 │  │  • Label: ingress-ready=true                            │   │
-│  │  • Ports exposés: 80, 443, 30080, 30002, 30090, 30030   │   │
+│  │  • Ports exposés: 80, 443                               │   │
 │  └─────────────────────────────────────────────────────────┘   │
 │                                                                 │
 │  ┌────────────────────────┐  ┌────────────────────────┐        │
@@ -51,13 +51,10 @@ Avant de créer le cluster, assurez-vous d'avoir installé :
 
 | Port | Service | Description |
 |------|---------|-------------|
-| **80** | Ingress HTTP | Trafic HTTP vers les applications |
-| **443** | Ingress HTTPS | Trafic HTTPS vers les applications |
-| **30080** | ArgoCD | Interface web GitOps |
-| **30002** | Harbor | Registry de conteneurs |
-| **30090** | Prometheus | Métriques et monitoring |
-| **30030** | Grafana | Tableaux de bord |
-| **30093** | Alertmanager | Gestion des alertes |
+| **80** | Ingress HTTP | Trafic HTTP vers toutes les applications |
+| **443** | Ingress HTTPS | Trafic HTTPS vers toutes les applications |
+
+> **Note** : Tous les services sont accessibles via l'Ingress NGINX sur les ports 80/443. Les NodePorts ne sont plus nécessaires.
 
 ## Gestion du Cluster
 
@@ -88,22 +85,37 @@ kind delete cluster --name spring-k8s-gitops
 
 ## Accès aux Services
 
-Une fois le cluster déployé avec les applications :
+Une fois le cluster déployé avec les applications, tous les services sont accessibles via l'Ingress :
 
 | Service | URL | Identifiants par défaut |
-|---------|-----|------------------------|
+|---------|-----|-------------------------|
 | Frontend | http://frontend.local | - |
-| ArgoCD | http://localhost:30080 | admin / `kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" \| base64 -d` |
-| Harbor | http://localhost:30002 | admin / Harbor12345 |
-| Prometheus | http://localhost:30090 | - |
-| Grafana | http://localhost:30030 | admin / prom-operator |
+| ArgoCD | http://argocd.local | admin / `kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" \| base64 -d` |
+| Harbor | http://harbor.local | admin / Harbor12345 |
+| Prometheus | http://prometheus.local | - |
+| Alertmanager | http://alertmanager.local | - |
+| Grafana | http://grafana.local | admin / admin |
 
 ### Configuration du fichier hosts
 
-Pour accéder à l'application via `frontend.local`, ajoutez cette ligne à `/etc/hosts` :
+Pour accéder aux services via leurs domaines locaux, ajoutez ces lignes à `/etc/hosts` :
 
 ```bash
-echo "127.0.0.1 frontend.local" | sudo tee -a /etc/hosts
+cat << 'EOF' | sudo tee -a /etc/hosts
+# spring-k8s-gitops - Services locaux
+127.0.0.1 frontend.local
+127.0.0.1 argocd.local
+127.0.0.1 harbor.local
+127.0.0.1 prometheus.local
+127.0.0.1 alertmanager.local
+127.0.0.1 grafana.local
+EOF
+```
+
+Ou en une seule ligne :
+
+```bash
+echo "127.0.0.1 frontend.local argocd.local harbor.local prometheus.local alertmanager.local grafana.local" | sudo tee -a /etc/hosts
 ```
 
 ## Commandes Utiles

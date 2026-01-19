@@ -9,8 +9,16 @@ grafana:
 
   # Service configuration
   service:
-    type: NodePort
-    nodePort: 30030
+    type: ClusterIP
+
+  # Ingress configuration
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - grafana.local
+    path: /
+    pathType: Prefix
 
   # Resource limits
   resources:
@@ -101,7 +109,7 @@ grafana:
   # Grafana.ini configuration
   grafana.ini:
     server:
-      root_url: "%(protocol)s://%(domain)s:%(http_port)s/"
+      root_url: "http://grafana.local/"
       serve_from_sub_path: false
     auth:
       disable_login_form: false

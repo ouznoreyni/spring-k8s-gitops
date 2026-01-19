@@ -43,6 +43,38 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+check_hosts_entries() {
+    log_info "Checking /etc/hosts entries..."
+
+    local hosts_file="/etc/hosts"
+    local required_hosts=("argocd.local" "harbor.local" "prometheus.local" "alertmanager.local" "grafana.local" "frontend.local")
+    local missing_hosts=()
+
+    for host in "${required_hosts[@]}"; do
+        if ! grep -q "$host" "$hosts_file" 2>/dev/null; then
+            missing_hosts+=("$host")
+        fi
+    done
+
+    if [ ${#missing_hosts[@]} -gt 0 ]; then
+        log_warning "Missing /etc/hosts entries for: ${missing_hosts[*]}"
+        echo ""
+        log_info "Please add the following line to your /etc/hosts file:"
+        echo -e "${YELLOW}  127.0.0.1 argocd.local harbor.local prometheus.local alertmanager.local grafana.local frontend.local${NC}"
+        echo ""
+        log_info "Run: echo '127.0.0.1 argocd.local harbor.local prometheus.local alertmanager.local grafana.local frontend.local' | sudo tee -a /etc/hosts"
+        echo ""
+        read -p "Do you want to continue anyway? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            log_error "Please configure /etc/hosts and run again."
+            exit 1
+        fi
+    else
+        log_success "All required /etc/hosts entries are configured"
+    fi
+}
+
 check_prerequisites() {
     log_info "Checking prerequisites..."
 
@@ -217,7 +249,7 @@ load_images_to_kind() {
 }
 
 # Harbor configuration
-HARBOR_HOST="localhost:30002"
+HARBOR_HOST="harbor.local"
 HARBOR_PROJECT="library"
 HARBOR_USER="admin"
 HARBOR_PASSWORD="Harbor12345"
@@ -544,13 +576,22 @@ print_summary() {
         echo "  Password: Run 'kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=\"{.data.password}\" | base64 -d'"
     fi
     echo ""
-    echo -e "${BLUE}Access URLs:${NC}"
-    echo "  ArgoCD:      http://localhost:30080"
-    echo "  Prometheus:  http://localhost:30090"
-    echo "  Grafana:     http://localhost:30030"
-    echo "  Harbor:      http://localhost:30002"
+    echo -e "${BLUE}Access URLs (via Ingress):${NC}"
+    echo "  ArgoCD:       http://argocd.local"
+    echo "  Prometheus:   http://prometheus.local"
+    echo "  Alertmanager: http://alertmanager.local"
+    echo "  Grafana:      http://grafana.local"
+    echo "  Harbor:       http://harbor.local"
+    echo "  Frontend:     http://frontend.local"
     echo ""
-    echo -e "${BLUE}Port-forward (if NodePort not working):${NC}"
+    echo -e "${BLUE}Required /etc/hosts entries:${NC}"
+    echo "  127.0.0.1 argocd.local harbor.local prometheus.local alertmanager.local grafana.local frontend.local"
+    echo ""
+    echo -e "${BLUE}Docker insecure registry (for pushing to Harbor):${NC}"
+    echo "  Add to Docker Desktop settings or /etc/docker/daemon.json:"
+    echo "  { \"insecure-registries\": [\"harbor.local\"] }"
+    echo ""
+    echo -e "${BLUE}Port-forward (if Ingress not working):${NC}"
     echo "  kubectl port-forward svc/argocd-argo-cd-server -n argocd 8080:80"
     echo ""
     echo -e "${BLUE}Useful Commands:${NC}"
@@ -589,6 +630,9 @@ main() {
     done
 
     check_prerequisites
+    echo ""
+
+    check_hosts_entries
     echo ""
 
     if [ "$BUILD_ONLY" = true ]; then
