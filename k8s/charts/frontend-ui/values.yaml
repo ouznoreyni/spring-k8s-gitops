@@ -4,9 +4,9 @@
 replicaCount: 2
 
 image:
-  repository: harbor.registry/library/blog-frontend
-  tag: "cbf938e-20260119182744"
-  pullPolicy: IfNotPresent
+  repository: blog-frontend
+  tag: "dev"
+  pullPolicy: Never
 
 imagePullSecrets: []
 nameOverride: ""

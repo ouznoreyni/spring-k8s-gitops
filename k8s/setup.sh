@@ -314,23 +314,20 @@ push_images_to_harbor() {
 update_helm_values() {
     log_info "Updating Helm values with image tag: $IMAGE_TAG"
 
-    # Harbor registry path accessible from inside the cluster
-    local HARBOR_REGISTRY="harbor.registry/${HARBOR_PROJECT}"
-
-    # Update spring-api values
+    # Update spring-api values (use local image name loaded into Kind)
     local SPRING_VALUES="$SCRIPT_DIR/charts/spring-api/values.yaml"
     if [ -f "$SPRING_VALUES" ]; then
         # Use sed to update image repository and tag
-        sed -i.bak "s|repository: .*|repository: ${HARBOR_REGISTRY}/blog-api|" "$SPRING_VALUES"
+        sed -i.bak "s|repository: .*|repository: blog-api|" "$SPRING_VALUES"
         sed -i.bak "s|tag: .*|tag: \"${IMAGE_TAG}\"|" "$SPRING_VALUES"
         rm -f "${SPRING_VALUES}.bak"
         log_success "Updated spring-api values.yaml"
     fi
 
-    # Update frontend-ui values
+    # Update frontend-ui values (use local image name loaded into Kind)
     local FRONTEND_VALUES="$SCRIPT_DIR/charts/frontend-ui/values.yaml"
     if [ -f "$FRONTEND_VALUES" ]; then
-        sed -i.bak "s|repository: .*|repository: ${HARBOR_REGISTRY}/blog-frontend|" "$FRONTEND_VALUES"
+        sed -i.bak "s|repository: .*|repository: blog-frontend|" "$FRONTEND_VALUES"
         sed -i.bak "s|tag: .*|tag: \"${IMAGE_TAG}\"|" "$FRONTEND_VALUES"
         rm -f "${FRONTEND_VALUES}.bak"
         log_success "Updated frontend-ui values.yaml"
@@ -386,9 +383,6 @@ build_and_load_images() {
     echo ""
 
     update_helm_values
-    echo ""
-
-    commit_and_push
 }
 
 update_argocd_dependencies() {
@@ -640,6 +634,8 @@ main() {
         echo ""
         push_images_to_harbor
         echo ""
+        commit_and_push
+        echo ""
         log_success "Images rebuilt and pushed to Harbor. ArgoCD will sync automatically."
         exit 0
     fi
@@ -678,6 +674,8 @@ main() {
 
     if [ "$SKIP_BUILD" = false ]; then
         push_images_to_harbor
+        echo ""
+        commit_and_push
         echo ""
     fi
 }
