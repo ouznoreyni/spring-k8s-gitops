@@ -1,7 +1,7 @@
 import type { AuthResponse, LoginRequest, RegisterRequest } from "../types/auth";
 
 export class ApiAuthRepository {
-  private baseUrl = import.meta.env.VITE_AUTH_URL || "http://localhost:8080/api/auth";
+  private baseUrl = `${import.meta.env.VITE_API_URL || "/api"}/auth`;
 
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     const response = await fetch(`${this.baseUrl}/login`, {

@@ -13,11 +13,9 @@ RUN npm ci
 COPY . .
 
 # Environment variables for build
-ARG VITE_API_URL
-ARG VITE_AUTH_URL
+ARG VITE_API_URL=/api
 
 ENV VITE_API_URL=$VITE_API_URL
-ENV VITE_AUTH_URL=$VITE_AUTH_URL
 
 # Build the application
 RUN npm run build

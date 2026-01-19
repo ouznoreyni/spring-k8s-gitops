@@ -1,7 +1,7 @@
 import type { Article, ArticleRepository, CreateArticleRequest, PaginatedResponse } from "../types/article";
 
 export class ApiArticleRepository implements ArticleRepository {
-  private baseUrl = import.meta.env.VITE_API_URL || "http://localhost:8080/api/articles";
+  private baseUrl = `${import.meta.env.VITE_API_URL || "/api"}/articles`;
 
   async getAll(page: number, size: number): Promise<PaginatedResponse<Article>> {
     const response = await fetch(`${this.baseUrl}?page=${page}&size=${size}`);
