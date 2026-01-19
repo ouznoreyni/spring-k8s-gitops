@@ -21,12 +21,9 @@ ingress-nginx:
     # Use host network for direct access
     hostNetwork: false
 
-    # Service configuration
+    # Service configuration - use ClusterIP since hostPort handles external access
     service:
-      type: NodePort
-      nodePorts:
-        http: 80
-        https: 443
+      type: ClusterIP
 
     # Resource limits
     resources:

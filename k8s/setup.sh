@@ -420,7 +420,9 @@ wait_for_argocd_apps() {
     while [ $attempt -le $max_attempts ]; do
         if kubectl get ns registry &>/dev/null; then
             # Check if Harbor pods are running
-            local harbor_ready=$(kubectl get pods -n registry -l app.kubernetes.io/name=harbor -o jsonpath='{.items[*].status.phase}' 2>/dev/null | grep -c "Running" || echo "0")
+            local harbor_ready
+            harbor_ready=$(kubectl get pods -n registry -l app.kubernetes.io/name=harbor --field-selector=status.phase=Running --no-headers 2>/dev/null | wc -l | tr -d '[:space:]')
+            harbor_ready=${harbor_ready:-0}
             if [ "$harbor_ready" -ge 1 ]; then
                 log_success "Harbor pods are starting..."
                 break
