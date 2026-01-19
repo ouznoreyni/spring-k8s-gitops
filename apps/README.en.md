@@ -1,24 +1,24 @@
 # Blog Platform - Applications
 
 <p align="center">
-  <strong>Français</strong> |
-  <a href="README.en.md">English</a>
+  <a href="README.md">Français</a> |
+  <strong>English</strong>
 </p>
 
-Une plateforme de blog moderne construite avec une architecture microservices, utilisant React pour le frontend, Spring Boot pour le backend, et PostgreSQL comme base de données.
+A modern blog platform built with a microservices architecture, using React for the frontend, Spring Boot for the backend, and PostgreSQL as the database.
 
-## Table des matières
+## Table of Contents
 
-- [Architecture Générale](#architecture-générale)
+- [General Architecture](#general-architecture)
 - [Frontend](#frontend)
 - [Backend](#backend)
-- [Base de Données](#base-de-données)
+- [Database](#database)
 - [Clean Architecture](#clean-architecture)
-- [Démarrage Rapide](#démarrage-rapide)
+- [Quick Start](#quick-start)
 
 ---
 
-## Architecture Générale
+## General Architecture
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
@@ -30,11 +30,11 @@ Une plateforme de blog moderne construite avec une architecture microservices, u
       :80                    :8080                   :5432
 ```
 
-| Composant | Technologie | Description |
-|-----------|-------------|-------------|
-| Frontend | React 19 + TypeScript | Interface utilisateur moderne et réactive |
-| Backend | Spring Boot 3.4.1 + WebFlux | API REST réactive avec Clean Architecture |
-| Database | PostgreSQL 15 | Stockage relationnel des données |
+| Component | Technology | Description |
+|-----------|------------|-------------|
+| Frontend | React 19 + TypeScript | Modern and reactive user interface |
+| Backend | Spring Boot 3.4.1 + WebFlux | Reactive REST API with Clean Architecture |
+| Database | PostgreSQL 15 | Relational data storage |
 
 ---
 
@@ -42,59 +42,59 @@ Une plateforme de blog moderne construite avec une architecture microservices, u
 
 ### Technologies
 
-| Technologie | Version | Rôle |
-|-------------|---------|------|
-| React | 19.2.0 | Framework UI |
-| TypeScript | 5.9.3 | Typage statique |
+| Technology | Version | Role |
+|------------|---------|------|
+| React | 19.2.0 | UI Framework |
+| TypeScript | 5.9.3 | Static typing |
 | Vite | 7.2.4 | Build tool & dev server |
-| React Router | 7.12.0 | Routage client |
-| Zustand | 5.0.10 | Gestion d'état global |
-| TanStack Query | 5.90.19 | Gestion des données serveur |
-| Tailwind CSS | 3.4.19 | Framework CSS utilitaire |
-| Lucide React | 0.562.0 | Bibliothèque d'icônes |
+| React Router | 7.12.0 | Client-side routing |
+| Zustand | 5.0.10 | Global state management |
+| TanStack Query | 5.90.19 | Server state management |
+| Tailwind CSS | 3.4.19 | Utility CSS framework |
+| Lucide React | 0.562.0 | Icon library |
 
-### Structure du Projet
+### Project Structure
 
 ```
 frontend-ui/
 ├── src/
-│   ├── api/                    # Repositories API
-│   │   ├── articles.ts         # Endpoints articles
-│   │   └── auth.ts             # Endpoints authentification
+│   ├── api/                    # API Repositories
+│   │   ├── articles.ts         # Articles endpoints
+│   │   └── auth.ts             # Authentication endpoints
 │   │
 │   ├── components/
-│   │   ├── ui/                 # Composants réutilisables (Button, Image)
+│   │   ├── ui/                 # Reusable components (Button, Image)
 │   │   ├── layout/             # Header, Footer, Hero, AdminLayout
-│   │   └── articles/           # Composants spécifiques aux articles
+│   │   └── articles/           # Article-specific components
 │   │
 │   ├── hooks/
-│   │   └── useArticles.ts      # Hook pour infinite scroll
+│   │   └── useArticles.ts      # Hook for infinite scroll
 │   │
 │   ├── pages/
 │   │   ├── HomePage.tsx
 │   │   ├── ArticlesPage.tsx
 │   │   ├── LoginPage.tsx
 │   │   ├── RegisterPage.tsx
-│   │   └── admin/              # Pages d'administration
+│   │   └── admin/              # Administration pages
 │   │
 │   ├── store/
-│   │   ├── authStore.ts        # État d'authentification (Zustand)
-│   │   └── uiStore.ts          # État UI
+│   │   ├── authStore.ts        # Authentication state (Zustand)
+│   │   └── uiStore.ts          # UI state
 │   │
-│   ├── types/                  # Interfaces TypeScript
-│   └── lib/                    # Utilitaires
+│   ├── types/                  # TypeScript interfaces
+│   └── lib/                    # Utilities
 │
-├── nginx.conf                  # Configuration reverse proxy
-├── Dockerfile                  # Build multi-stage
+├── nginx.conf                  # Reverse proxy configuration
+├── Dockerfile                  # Multi-stage build
 └── package.json
 ```
 
-### Gestion d'État
+### State Management
 
-**Zustand** est utilisé pour la gestion d'état globale avec deux stores principaux :
+**Zustand** is used for global state management with two main stores:
 
 ```typescript
-// authStore - État d'authentification (persisté dans localStorage)
+// authStore - Authentication state (persisted in localStorage)
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
@@ -105,22 +105,22 @@ interface AuthState {
 }
 ```
 
-**React Query** gère l'état serveur avec :
-- Cache automatique des requêtes
-- Invalidation intelligente
-- Infinite queries pour la pagination
+**React Query** manages server state with:
+- Automatic query caching
+- Smart invalidation
+- Infinite queries for pagination
 
 ### Routes
 
-| Route | Page | Accès |
-|-------|------|-------|
-| `/` | Accueil | Public |
-| `/articles` | Liste des articles | Public |
-| `/login` | Connexion | Public |
-| `/register` | Inscription | Public |
-| `/admin` | Dashboard admin | Admin uniquement |
-| `/admin/articles` | Gestion articles | Admin uniquement |
-| `/admin/users` | Gestion utilisateurs | Admin uniquement |
+| Route | Page | Access |
+|-------|------|--------|
+| `/` | Home | Public |
+| `/articles` | Article list | Public |
+| `/login` | Login | Public |
+| `/register` | Registration | Public |
+| `/admin` | Admin dashboard | Admin only |
+| `/admin/articles` | Article management | Admin only |
+| `/admin/users` | User management | Admin only |
 
 ---
 
@@ -128,45 +128,45 @@ interface AuthState {
 
 ### Technologies
 
-| Technologie | Version | Rôle |
-|-------------|---------|------|
-| Spring Boot | 3.4.1 | Framework principal |
-| Java | 21 | Langage (LTS) |
-| Spring WebFlux | - | Web réactif non-bloquant |
-| R2DBC | - | Accès DB réactif |
-| Spring Security | - | Sécurité & authentification |
-| JWT (JJWT) | 0.12.6 | Tokens d'authentification |
-| MapStruct | 1.6.3 | Mapping DTO automatique |
-| Flyway | - | Migrations de base de données |
-| SpringDoc OpenAPI | 2.8.3 | Documentation API (Swagger) |
+| Technology | Version | Role |
+|------------|---------|------|
+| Spring Boot | 3.4.1 | Main framework |
+| Java | 21 | Language (LTS) |
+| Spring WebFlux | - | Non-blocking reactive web |
+| R2DBC | - | Reactive DB access |
+| Spring Security | - | Security & authentication |
+| JWT (JJWT) | 0.12.6 | Authentication tokens |
+| MapStruct | 1.6.3 | Automatic DTO mapping |
+| Flyway | - | Database migrations |
+| SpringDoc OpenAPI | 2.8.3 | API documentation (Swagger) |
 
-### Structure du Projet (Clean Architecture)
+### Project Structure (Clean Architecture)
 
 ```
 spring-api/src/main/java/sn/noreyni/springapi/
 │
-├── domain/                          # Couche Domaine
-│   ├── model/                       # Entités métier pures
+├── domain/                          # Domain Layer
+│   ├── model/                       # Pure business entities
 │   │   ├── Article.java
 │   │   ├── User.java
 │   │   ├── Comment.java
 │   │   ├── Tag.java
 │   │   └── ArticleStatus.java
-│   └── repository/                  # Interfaces des repositories
+│   └── repository/                  # Repository interfaces
 │
-├── application/                     # Couche Application
-│   ├── facade/                      # Orchestration des use cases
+├── application/                     # Application Layer
+│   ├── facade/                      # Use case orchestration
 │   │   ├── ArticleFacade.java
 │   │   ├── UserFacade.java
 │   │   ├── AuthFacade.java
 │   │   └── CommentFacade.java
 │   │
-│   ├── usecase/                     # Cas d'utilisation (CQRS)
+│   ├── usecase/                     # Use cases (CQRS)
 │   │   ├── article/
-│   │   │   ├── command/             # Écriture
+│   │   │   ├── command/             # Write
 │   │   │   │   ├── CreateArticleCommand.java
 │   │   │   │   └── DeleteArticleCommand.java
-│   │   │   └── query/               # Lecture
+│   │   │   └── query/               # Read
 │   │   │       ├── GetArticleByIdQuery.java
 │   │   │       └── GetArticleListQuery.java
 │   │   ├── user/
@@ -178,76 +178,76 @@ spring-api/src/main/java/sn/noreyni/springapi/
 │   │
 │   ├── dto/                         # Data Transfer Objects
 │   ├── mapper/                      # MapStruct mappers
-│   └── service/                     # Services applicatifs
+│   └── service/                     # Application services
 │
-├── infrastructure/                  # Couche Infrastructure
-│   ├── config/                      # Configurations Spring
+├── infrastructure/                  # Infrastructure Layer
+│   ├── config/                      # Spring configurations
 │   │   ├── SecurityConfig.java
 │   │   ├── OpenApiConfig.java
 │   │   └── DataInitializer.java
 │   │
-│   ├── security/                    # Sécurité JWT
+│   ├── security/                    # JWT Security
 │   │   ├── JwtService.java
 │   │   ├── JwtAuthenticationFilter.java
 │   │   └── ReactiveUserDetailsServiceImpl.java
 │   │
 │   ├── persistence/
-│   │   ├── repository/              # Implémentations R2DBC
-│   │   └── entity/                  # Entités de persistence
+│   │   ├── repository/              # R2DBC implementations
+│   │   └── entity/                  # Persistence entities
 │   │
-│   └── exception/                   # Gestion des erreurs
+│   └── exception/                   # Error handling
 │
-└── web/                             # Couche Présentation
-    ├── controller/                  # Contrôleurs REST
+└── web/                             # Presentation Layer
+    ├── controller/                  # REST Controllers
     │   ├── ArticleController.java
     │   ├── AuthController.java
     │   ├── UserController.java
     │   └── CommentController.java
-    ├── request/                     # DTOs de requête
-    └── response/                    # DTOs de réponse
+    ├── request/                     # Request DTOs
+    └── response/                    # Response DTOs
 ```
 
-### Endpoints API
+### API Endpoints
 
-#### Authentification
+#### Authentication
 
-| Méthode | Endpoint | Description |
-|---------|----------|-------------|
-| POST | `/api/auth/register` | Inscription |
-| POST | `/api/auth/login` | Connexion |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/register` | Registration |
+| POST | `/api/auth/login` | Login |
 
 #### Articles
 
-| Méthode | Endpoint | Description |
-|---------|----------|-------------|
-| GET | `/api/articles` | Liste paginée des articles |
-| GET | `/api/articles/{id}` | Détails d'un article |
-| POST | `/api/articles` | Créer un article (auth) |
-| DELETE | `/api/articles/{id}` | Supprimer un article (auth) |
-| GET | `/api/articles/author/{authorId}` | Articles par auteur |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/articles` | Paginated article list |
+| GET | `/api/articles/{id}` | Article details |
+| POST | `/api/articles` | Create article (auth) |
+| DELETE | `/api/articles/{id}` | Delete article (auth) |
+| GET | `/api/articles/author/{authorId}` | Articles by author |
 
-#### Utilisateurs & Commentaires
+#### Users & Comments
 
-| Méthode | Endpoint | Description |
-|---------|----------|-------------|
-| GET | `/api/users` | Liste des utilisateurs |
-| GET | `/api/comments/article/{id}` | Commentaires d'un article |
-| POST | `/api/comments` | Ajouter un commentaire |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/users` | User list |
+| GET | `/api/comments/article/{id}` | Article comments |
+| POST | `/api/comments` | Add comment |
 
 #### Documentation & Monitoring
 
 | Endpoint | Description |
 |----------|-------------|
-| `/swagger-ui.html` | Documentation OpenAPI |
+| `/swagger-ui.html` | OpenAPI documentation |
 | `/actuator/health` | Health check |
-| `/actuator/prometheus` | Métriques Prometheus |
+| `/actuator/prometheus` | Prometheus metrics |
 
-### Programmation Réactive
+### Reactive Programming
 
-Le backend utilise **Spring WebFlux** pour une programmation entièrement réactive et non-bloquante :
+The backend uses **Spring WebFlux** for fully reactive, non-blocking programming:
 
 ```java
-// Exemple de controller réactif
+// Reactive controller example
 @GetMapping("/{id}")
 public Mono<ArticleResponse> getArticle(@PathVariable Long id) {
     return articleFacade.getArticleById(id);
@@ -261,20 +261,20 @@ public Flux<ArticleResponse> getAllArticles(
 }
 ```
 
-**Avantages :**
-- Meilleure utilisation des ressources
-- Scalabilité accrue
-- Gestion efficace des connexions simultanées
+**Benefits:**
+- Better resource utilization
+- Increased scalability
+- Efficient handling of concurrent connections
 
 ---
 
-## Base de Données
+## Database
 
 ### PostgreSQL 15
 
-PostgreSQL est utilisé comme système de gestion de base de données relationnelle principal.
+PostgreSQL is used as the primary relational database management system.
 
-### Schéma de la Base de Données
+### Database Schema
 
 ```sql
 ┌─────────────────────────────────────────────────────────────────┐
@@ -311,19 +311,19 @@ PostgreSQL est utilisé comme système de gestion de base de données relationne
                                   └─────────────────────┘
 ```
 
-### Migrations Flyway
+### Flyway Migrations
 
-Les migrations sont gérées automatiquement par Flyway :
+Migrations are managed automatically by Flyway:
 
 | Version | Description |
 |---------|-------------|
-| V1 | Schéma initial (users, articles, comments) |
-| V2 | Index de performance |
-| V3 | Colonne imageUrl |
-| V4 | Colonne status (DRAFT/PUBLISHED) |
-| V5 | Views, likes et support des tags |
+| V1 | Initial schema (users, articles, comments) |
+| V2 | Performance indexes |
+| V3 | imageUrl column |
+| V4 | status column (DRAFT/PUBLISHED) |
+| V5 | Views, likes and tag support |
 
-Les fichiers de migration se trouvent dans :
+Migration files are located in:
 ```
 spring-api/src/main/resources/db/migration/
 ├── V1__initial_schema.sql
@@ -333,22 +333,22 @@ spring-api/src/main/resources/db/migration/
 └── V5__add_views_likes_tags.sql
 ```
 
-### Connexion
+### Connection
 
-Le backend utilise deux types de connexion :
+The backend uses two connection types:
 
 | Type | Usage | Driver |
 |------|-------|--------|
-| R2DBC | Opérations réactives | r2dbc-postgresql |
-| JDBC | Migrations Flyway | postgresql |
+| R2DBC | Reactive operations | r2dbc-postgresql |
+| JDBC | Flyway migrations | postgresql |
 
 ---
 
 ## Clean Architecture
 
-### Principes Appliqués
+### Applied Principles
 
-L'application suit les principes de la **Clean Architecture** (Uncle Bob) pour garantir une séparation claire des responsabilités et une testabilité maximale.
+The application follows **Clean Architecture** principles (Uncle Bob) to ensure clear separation of responsibilities and maximum testability.
 
 ```
                     ┌─────────────────────────┐
@@ -381,14 +381,14 @@ L'application suit les principes de la **Clean Architecture** (Uncle Bob) pour g
                     └─────────────────────────┘
 ```
 
-### Couches et Responsabilités
+### Layers and Responsibilities
 
-#### 1. Couche Domaine (`domain/`)
+#### 1. Domain Layer (`domain/`)
 
-La couche la plus interne, sans dépendances externes.
+The innermost layer, with no external dependencies.
 
 ```java
-// Entité métier pure
+// Pure business entity
 public class Article {
     private Long id;
     private String title;
@@ -397,21 +397,21 @@ public class Article {
     private Long authorId;
     private Integer views;
     private Integer likes;
-    // Logique métier uniquement
+    // Business logic only
 }
 ```
 
-**Contient :**
-- Entités métier (Article, User, Comment, Tag)
-- Interfaces des repositories
-- Règles métier pures
+**Contains:**
+- Business entities (Article, User, Comment, Tag)
+- Repository interfaces
+- Pure business rules
 
-#### 2. Couche Application (`application/`)
+#### 2. Application Layer (`application/`)
 
-Orchestre les cas d'utilisation et coordonne le flux de données.
+Orchestrates use cases and coordinates data flow.
 
 ```java
-// Facade qui coordonne les use cases
+// Facade coordinating use cases
 @Service
 public class ArticleFacade {
     private final CreateArticleCommand createCommand;
@@ -423,18 +423,18 @@ public class ArticleFacade {
 }
 ```
 
-**Contient :**
-- Facades (points d'entrée pour les contrôleurs)
-- Use Cases (Commands & Queries - pattern CQRS)
+**Contains:**
+- Facades (entry points for controllers)
+- Use Cases (Commands & Queries - CQRS pattern)
 - DTOs (Data Transfer Objects)
 - Mappers (MapStruct)
 
-#### 3. Couche Infrastructure (`infrastructure/`)
+#### 3. Infrastructure Layer (`infrastructure/`)
 
-Implémente les détails techniques et les intégrations externes.
+Implements technical details and external integrations.
 
 ```java
-// Implémentation du repository avec R2DBC
+// Repository implementation with R2DBC
 @Repository
 public class ArticleRepositoryImpl implements ArticleRepository {
     private final R2dbcArticleRepository r2dbcRepository;
@@ -447,15 +447,15 @@ public class ArticleRepositoryImpl implements ArticleRepository {
 }
 ```
 
-**Contient :**
-- Configuration Spring (Security, OpenAPI)
-- Implémentations des repositories (R2DBC)
-- Services de sécurité (JWT)
-- Gestion des exceptions
+**Contains:**
+- Spring configuration (Security, OpenAPI)
+- Repository implementations (R2DBC)
+- Security services (JWT)
+- Exception handling
 
-#### 4. Couche Web (`web/`)
+#### 4. Web Layer (`web/`)
 
-Gère les interactions HTTP.
+Handles HTTP interactions.
 
 ```java
 @RestController
@@ -470,21 +470,21 @@ public class ArticleController {
 }
 ```
 
-**Contient :**
-- Contrôleurs REST
-- DTOs de requête/réponse
-- Validation des entrées
+**Contains:**
+- REST controllers
+- Request/Response DTOs
+- Input validation
 
-### Pattern CQRS
+### CQRS Pattern
 
-L'application implémente un pattern **CQRS simplifié** (Command Query Responsibility Segregation) :
+The application implements a **simplified CQRS** pattern (Command Query Responsibility Segregation):
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         USE CASES                                │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│   Commands (Écriture)           Queries (Lecture)               │
+│   Commands (Write)              Queries (Read)                  │
 │   ├── CreateArticleCommand      ├── GetArticleByIdQuery         │
 │   ├── DeleteArticleCommand      ├── GetArticleListQuery         │
 │   ├── CreateUserCommand         ├── GetArticlesByAuthorQuery    │
@@ -494,7 +494,7 @@ L'application implémente un pattern **CQRS simplifié** (Command Query Responsi
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Flux des Dépendances
+### Dependency Flow
 
 ```
 Web (Controller) ──▶ Application (Facade) ──▶ Domain (Model)
@@ -503,59 +503,59 @@ Web (Controller) ──▶ Application (Facade) ──▶ Domain (Model)
                     Infrastructure (Repository) ───┘
 ```
 
-**Règle fondamentale :** Les dépendances pointent toujours vers l'intérieur (vers le domaine).
+**Fundamental rule:** Dependencies always point inward (toward the domain).
 
-### Avantages de cette Architecture
+### Architecture Benefits
 
-| Avantage | Description |
-|----------|-------------|
-| **Testabilité** | Chaque couche peut être testée indépendamment |
-| **Maintenabilité** | Modifications isolées sans effets de bord |
-| **Flexibilité** | Facile de changer de framework ou de base de données |
-| **Lisibilité** | Structure claire et prévisible |
-| **Évolutivité** | Ajout de fonctionnalités sans refactoring majeur |
+| Benefit | Description |
+|---------|-------------|
+| **Testability** | Each layer can be tested independently |
+| **Maintainability** | Isolated modifications without side effects |
+| **Flexibility** | Easy to change framework or database |
+| **Readability** | Clear and predictable structure |
+| **Scalability** | Add features without major refactoring |
 
 ---
 
-## Démarrage Rapide
+## Quick Start
 
-### Prérequis
+### Prerequisites
 
 - Docker & Docker Compose
-- Node.js 20+ (pour le développement frontend)
-- Java 21+ (pour le développement backend)
+- Node.js 20+ (for frontend development)
+- Java 21+ (for backend development)
 - Maven 3.9+
 
-### Lancement avec Docker Compose
+### Launch with Docker Compose
 
 ```bash
-# Depuis le dossier apps/
+# From the apps/ folder
 docker-compose up -d
 
-# L'application sera disponible sur :
-# Frontend : http://localhost
-# Backend API : http://localhost:8080
-# Swagger UI : http://localhost:8080/swagger-ui.html
+# The application will be available at:
+# Frontend: http://localhost
+# Backend API: http://localhost:8080
+# Swagger UI: http://localhost:8080/swagger-ui.html
 ```
 
-### Développement Local
+### Local Development
 
-**Backend :**
+**Backend:**
 ```bash
 cd spring-api
 ./mvnw spring-boot:run
 ```
 
-**Frontend :**
+**Frontend:**
 ```bash
 cd frontend-ui
 npm install
 npm run dev
 ```
 
-### Variables d'Environnement
+### Environment Variables
 
-**Backend (`application.yml`) :**
+**Backend (`application.yml`):**
 ```yaml
 DB_HOST: localhost
 DB_PORT: 5432
@@ -565,28 +565,28 @@ DB_PASSWORD: postgres
 JWT_SECRET: your-secret-key
 ```
 
-**Frontend (`.env`) :**
+**Frontend (`.env`):**
 ```env
-VITE_API_URL=http://localhost:8080/api
+VITE_API_URL=/api
 ```
 
 ---
 
-## Structure des Dossiers
+## Folder Structure
 
 ```
 apps/
-├── docker-compose.yml          # Orchestration locale
-├── README.md                   # Documentation en français
-├── README.en.md                # Documentation en anglais
+├── docker-compose.yml          # Local orchestration
+├── README.md                   # French documentation
+├── README.en.md                # English documentation (this file)
 │
-├── frontend-ui/                # Application React
+├── frontend-ui/                # React application
 │   ├── src/
 │   ├── Dockerfile
 │   ├── nginx.conf
 │   └── package.json
 │
-└── spring-api/                 # Application Spring Boot
+└── spring-api/                 # Spring Boot application
     ├── src/
     │   ├── main/
     │   │   ├── java/
@@ -599,6 +599,6 @@ apps/
 
 ---
 
-## Auteur
+## Author
 
-Développé avec la Clean Architecture pour une application moderne, scalable et maintenable.
+Built with Clean Architecture for a modern, scalable, and maintainable application.

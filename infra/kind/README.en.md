@@ -1,179 +1,179 @@
-# Cluster Kind - spring-k8s-gitops
+# Kind Cluster - spring-k8s-gitops
 
 <p align="center">
-  <strong>Français</strong> |
-  <a href="README.en.md">English</a>
+  <a href="README.md">Français</a> |
+  <strong>English</strong>
 </p>
 
-Ce dossier contient la configuration du cluster Kubernetes local utilisé pour le projet **spring-k8s-gitops**.
+This folder contains the configuration for the local Kubernetes cluster used in the **spring-k8s-gitops** project.
 
-## Qu'est-ce que Kind ?
+## What is Kind?
 
-[Kind](https://kind.sigs.k8s.io/) (Kubernetes IN Docker) est un outil permettant d'exécuter des clusters Kubernetes locaux en utilisant des conteneurs Docker comme "nœuds". Il est idéal pour :
+[Kind](https://kind.sigs.k8s.io/) (Kubernetes IN Docker) is a tool for running local Kubernetes clusters using Docker containers as "nodes". It is ideal for:
 
-- Le développement local
-- Les tests CI/CD
-- L'apprentissage de Kubernetes
+- Local development
+- CI/CD testing
+- Learning Kubernetes
 
-## Prérequis
+## Prerequisites
 
-Avant de créer le cluster, assurez-vous d'avoir installé :
+Before creating the cluster, make sure you have installed:
 
-| Outil | Version minimale | Installation |
-|-------|------------------|--------------|
+| Tool | Minimum Version | Installation |
+|------|-----------------|--------------|
 | Docker | 20.10+ | [docs.docker.com](https://docs.docker.com/get-docker/) |
-| Kind | 0.20+ | `brew install kind` ou [kind.sigs.k8s.io](https://kind.sigs.k8s.io/docs/user/quick-start/#installation) |
+| Kind | 0.20+ | `brew install kind` or [kind.sigs.k8s.io](https://kind.sigs.k8s.io/docs/user/quick-start/#installation) |
 | kubectl | 1.28+ | `brew install kubectl` |
 | Helm | 3.12+ | `brew install helm` |
 
-## Architecture du Cluster
+## Cluster Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Cluster Kind: spring-k8s-gitops              │
+│                    Kind Cluster: spring-k8s-gitops              │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  ┌─────────────────────────────────────────────────────────┐   │
 │  │                   CONTROL-PLANE                          │   │
 │  │  • Label: ingress-ready=true                            │   │
-│  │  • Ports exposés: 80, 443, 30080, 30002, 30090, 30030   │   │
+│  │  • Exposed ports: 80, 443, 30080, 30002, 30090, 30030   │   │
 │  └─────────────────────────────────────────────────────────┘   │
 │                                                                 │
 │  ┌────────────────────────┐  ┌────────────────────────┐        │
 │  │       WORKER 1         │  │       WORKER 2         │        │
-│  │  • Workloads applicatifs│  │  • Workloads applicatifs│        │
+│  │  • Application workloads│  │  • Application workloads│        │
 │  └────────────────────────┘  └────────────────────────┘        │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## Ports Exposés
+## Exposed Ports
 
 | Port | Service | Description |
 |------|---------|-------------|
-| **80** | Ingress HTTP | Trafic HTTP vers les applications |
-| **443** | Ingress HTTPS | Trafic HTTPS vers les applications |
-| **30080** | ArgoCD | Interface web GitOps |
-| **30002** | Harbor | Registry de conteneurs |
-| **30090** | Prometheus | Métriques et monitoring |
-| **30030** | Grafana | Tableaux de bord |
-| **30093** | Alertmanager | Gestion des alertes |
+| **80** | Ingress HTTP | HTTP traffic to applications |
+| **443** | Ingress HTTPS | HTTPS traffic to applications |
+| **30080** | ArgoCD | GitOps web interface |
+| **30002** | Harbor | Container registry |
+| **30090** | Prometheus | Metrics and monitoring |
+| **30030** | Grafana | Dashboards |
+| **30093** | Alertmanager | Alert management |
 
-## Gestion du Cluster
+## Cluster Management
 
-### Créer le cluster
+### Create the cluster
 
 ```bash
 kind create cluster --name spring-k8s-gitops --config kind-config.yaml
 ```
 
-### Vérifier l'état du cluster
+### Check cluster status
 
 ```bash
-# Vérifier que le cluster est créé
+# Verify cluster is created
 kind get clusters
 
-# Vérifier les nœuds
+# Check nodes
 kubectl get nodes
 
-# Vérifier tous les pods
+# Check all pods
 kubectl get pods -A
 ```
 
-### Supprimer le cluster
+### Delete the cluster
 
 ```bash
 kind delete cluster --name spring-k8s-gitops
 ```
 
-## Accès aux Services
+## Service Access
 
-Une fois le cluster déployé avec les applications :
+Once the cluster is deployed with applications:
 
-| Service | URL | Identifiants par défaut |
-|---------|-----|------------------------|
+| Service | URL | Default Credentials |
+|---------|-----|---------------------|
 | Frontend | http://frontend.local | - |
 | ArgoCD | http://localhost:30080 | admin / `kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" \| base64 -d` |
 | Harbor | http://localhost:30002 | admin / Harbor12345 |
 | Prometheus | http://localhost:30090 | - |
 | Grafana | http://localhost:30030 | admin / prom-operator |
 
-### Configuration du fichier hosts
+### Hosts file configuration
 
-Pour accéder à l'application via `frontend.local`, ajoutez cette ligne à `/etc/hosts` :
+To access the application via `frontend.local`, add this line to `/etc/hosts`:
 
 ```bash
 echo "127.0.0.1 frontend.local" | sudo tee -a /etc/hosts
 ```
 
-## Commandes Utiles
+## Useful Commands
 
 ```bash
-# Charger une image Docker dans Kind
-kind load docker-image mon-image:tag --name spring-k8s-gitops
+# Load a Docker image into Kind
+kind load docker-image my-image:tag --name spring-k8s-gitops
 
-# Obtenir le kubeconfig
+# Get kubeconfig
 kind get kubeconfig --name spring-k8s-gitops
 
-# Logs d'un nœud
+# Node logs
 docker logs spring-k8s-gitops-control-plane
 
-# Accéder au shell d'un nœud
+# Access node shell
 docker exec -it spring-k8s-gitops-control-plane bash
 ```
 
-## Dépannage
+## Troubleshooting
 
-### Le cluster ne démarre pas
+### Cluster won't start
 
 ```bash
-# Vérifier que Docker est en cours d'exécution
+# Verify Docker is running
 docker info
 
-# Vérifier les ressources Docker (mémoire, CPU)
+# Check Docker resources (memory, CPU)
 docker system info
 ```
 
-### Les ports sont déjà utilisés
+### Ports already in use
 
 ```bash
-# Identifier le processus utilisant le port
+# Identify process using the port
 lsof -i :80
 lsof -i :443
 
-# Arrêter le processus ou modifier kind-config.yaml
+# Stop the process or modify kind-config.yaml
 ```
 
-### Problèmes de réseau
+### Network issues
 
 ```bash
-# Redémarrer le cluster
+# Restart the cluster
 kind delete cluster --name spring-k8s-gitops
 kind create cluster --name spring-k8s-gitops --config kind-config.yaml
 
-# Vérifier les logs du conteneur
+# Check container logs
 docker logs spring-k8s-gitops-control-plane 2>&1 | tail -50
 ```
 
-### Réinitialiser complètement
+### Complete reset
 
 ```bash
-# Supprimer le cluster et nettoyer Docker
+# Delete cluster and clean Docker
 kind delete cluster --name spring-k8s-gitops
 docker system prune -f
 ```
 
-## Structure des Fichiers
+## File Structure
 
 ```
 infra/kind/
-├── README.md           # Documentation en français
-├── README.en.md        # Documentation en anglais
-└── kind-config.yaml    # Configuration du cluster Kind
+├── README.md           # French documentation
+├── README.en.md        # English documentation (this file)
+└── kind-config.yaml    # Kind cluster configuration
 ```
 
-## Ressources Complémentaires
+## Additional Resources
 
-- [Documentation officielle Kind](https://kind.sigs.k8s.io/)
-- [Kind avec Ingress NGINX](https://kind.sigs.k8s.io/docs/user/ingress/)
-- [Kind avec registre local](https://kind.sigs.k8s.io/docs/user/local-registry/)
+- [Official Kind Documentation](https://kind.sigs.k8s.io/)
+- [Kind with Ingress NGINX](https://kind.sigs.k8s.io/docs/user/ingress/)
+- [Kind with local registry](https://kind.sigs.k8s.io/docs/user/local-registry/)
