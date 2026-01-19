@@ -5,7 +5,7 @@ replicaCount: 2
 
 image:
   repository: blog-frontend
-  tag: "5c0b570-20260119185210"
+  tag: "b378d81-20260119191413"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
