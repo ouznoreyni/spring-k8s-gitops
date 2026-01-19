@@ -317,9 +317,10 @@ update_helm_values() {
     # Update spring-api values (use local image name loaded into Kind)
     local SPRING_VALUES="$SCRIPT_DIR/charts/spring-api/values.yaml"
     if [ -f "$SPRING_VALUES" ]; then
-        # Use sed to update image repository and tag
+        # Use sed to update image repository, tag, and pullPolicy
         sed -i.bak "s|repository: .*|repository: blog-api|" "$SPRING_VALUES"
         sed -i.bak "s|tag: .*|tag: \"${IMAGE_TAG}\"|" "$SPRING_VALUES"
+        sed -i.bak "s|pullPolicy: .*|pullPolicy: IfNotPresent|" "$SPRING_VALUES"
         rm -f "${SPRING_VALUES}.bak"
         log_success "Updated spring-api values.yaml"
     fi
@@ -329,6 +330,7 @@ update_helm_values() {
     if [ -f "$FRONTEND_VALUES" ]; then
         sed -i.bak "s|repository: .*|repository: blog-frontend|" "$FRONTEND_VALUES"
         sed -i.bak "s|tag: .*|tag: \"${IMAGE_TAG}\"|" "$FRONTEND_VALUES"
+        sed -i.bak "s|pullPolicy: .*|pullPolicy: IfNotPresent|" "$FRONTEND_VALUES"
         rm -f "${FRONTEND_VALUES}.bak"
         log_success "Updated frontend-ui values.yaml"
     fi
