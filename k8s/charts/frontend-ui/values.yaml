@@ -4,8 +4,8 @@
 replicaCount: 2
 
 image:
-  repository: harbor.local/library/blog-frontend
-  tag: "1ef2512-20260119162002"
+  repository: harbor.registry/library/blog-frontend
+  tag: "cd7d0ff-20260119172329"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
