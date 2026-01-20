@@ -5,7 +5,7 @@ replicaCount: 3
 
 image:
   repository: blog-api
-  tag: "b378d81-20260119191413"
+  tag: "f543db0-20260120220937"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
